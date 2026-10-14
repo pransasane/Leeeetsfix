@@ -1,0 +1,10 @@
+{
+  "name": " Let\u0027sFix",
+  "description": "Empowering citizens to identify, report, map, and monitor civic infrastructure problems with transparent location-based reporting.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
