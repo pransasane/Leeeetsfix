@@ -37,6 +37,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode = 'log
 
   if (!isOpen) return null;
 
+  const getAuthErrorMessage = (err: unknown, action: 'login' | 'signup') => {
+    const message = err instanceof Error ? err.message : '';
+    const normalized = message.toLowerCase();
+    if (action === 'login') {
+      if (normalized.includes('invalid login credentials') || normalized.includes('user not found') || normalized.includes('email not found')) {
+        return 'Email not found. Please register first.';
+      }
+      if (normalized.includes('email not confirmed')) {
+        return 'Please confirm your email address before signing in.';
+      }
+      return message || 'Unable to sign in. Please check your email and password.';
+    }
+    if (normalized.includes('user already registered') || normalized.includes('already been registered') || normalized.includes('already exists')) {
+      return 'This email is already registered. Please log in.';
+    }
+    return message || 'Registration failed. Please try again.';
+  };
+
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(null);
     if (!loginEmail.trim() || !loginPassword) { setError('Please enter your email and password.'); return; }
@@ -47,7 +65,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode = 'log
         : AuthService.login(loginEmail, loginPassword).user;
       if (!user) throw new Error('Failed to authenticate. Please check your credentials.');
       onSuccess(user); onClose();
-    } catch (err) { setError(err instanceof Error ? err.message : 'Failed to authenticate.'); }
+    } catch (err) { setError(getAuthErrorMessage(err, 'login')); }
     finally { setLoading(false); }
   };
 
@@ -61,14 +79,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode = 'log
     try {
       if (isSupabaseConfigured) {
         const result = await SupabaseAuthService.signup({ name: signupName, email: signupEmail, password: signupPassword, ward: signupWard, phone: signupPhone });
+        if (result.needsEmailConfirmation) {
+          setError('Account created. Please confirm your email before signing in.');
+          setMode('login');
+          setLoginEmail(signupEmail.trim().toLowerCase());
+          setLoginPassword('');
+          return;
+        }
         onSuccess(result.user); onClose();
-        if (result.needsEmailConfirmation) setError('Account created. Please confirm your email before signing in.');
       } else {
         const res = AuthService.signup({ name: signupName, email: signupEmail, password: signupPassword, ward: signupWard, phone: signupPhone });
         if (!res.success || !res.user) throw new Error(res.error || 'Registration failed.');
         onSuccess(res.user); onClose();
       }
-    } catch (err) { setError(err instanceof Error ? err.message : 'Registration failed.'); }
+    } catch (err) { setError(getAuthErrorMessage(err, 'signup')); }
     finally { setLoading(false); }
   };
 
