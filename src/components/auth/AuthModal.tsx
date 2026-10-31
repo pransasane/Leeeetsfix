@@ -40,12 +40,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode = 'log
   const getAuthErrorMessage = (err: unknown, action: 'login' | 'signup') => {
     const message = err instanceof Error ? err.message : '';
     const normalized = message.toLowerCase();
+    if (normalized.includes('rate limit') || normalized.includes('too many requests') || normalized.includes('over_email_send_rate_limit')) {
+      return 'Email service is temporarily rate-limited. Please wait a few minutes and try again. Your account may already have been created; do not register repeatedly with the same email.';
+    }
     if (action === 'login') {
       if (normalized.includes('invalid login credentials') || normalized.includes('user not found') || normalized.includes('email not found')) {
-        return 'Email not found. Please register first.';
+        return 'Email not found or password is incorrect. Please check your details or register first.';
       }
       if (normalized.includes('email not confirmed')) {
-        return 'Please confirm your email address before signing in.';
+        return 'This account was created but the email is not confirmed. Please confirm it before signing in.';
       }
       return message || 'Unable to sign in. Please check your email and password.';
     }
